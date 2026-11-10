@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - BASE_URL=${BASE_URL}
+      - MODEL_NAME=${MODEL_NAME}
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=${ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT}
+    volumes:
+      - ./logs:/app/logs
+      - ./reports:/app/reports
+      - ./chroma_db:/app/chroma_db
+      - ./health_agent.db:/app/health_agent.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    build:
+      context: ./frontend-react
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped

@@ -1,0 +1,28 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - BASE_URL=${BASE_URL}
+      - MODEL_NAME=${MODEL_NAME}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT}
+    volumes:
+      - ./logs:/app/logs
+      - ./chroma_db:/app/chroma_db
+      - ./health_agent.db:/app/health_agent.db
+    restart: unless-stopped
+
+  web:
+    build: .
+    ports:
+      - "8501:8501"
+    command: streamlit run frontend/streamlit_app.py --server.address 0.0.0.0 --server.port 8501
+    environment:
+      - API_BASE_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped
